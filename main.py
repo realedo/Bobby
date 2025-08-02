@@ -51,11 +51,11 @@ f_trading_days = f_schedule.index.date
 #tc = ticker candle, fc = futures ticker
 def ORB (tc, fc):       
 
-    if (abs(tc.iloc[0]["Open"][ticker] - tc.iloc[0]["Close"][ticker]) / tc.iloc[0]["Open"][ticker] < take_position_minimum ): #checks if theres enough slip to make the strategy work
+    if (round((abs(tc.iloc[0]["Open"][ticker] - tc.iloc[0]["Close"][ticker]) / tc.iloc[0]["Open"][ticker]),2) < take_position_minimum ): #checks if theres enough slip to make the strategy work
         return "t-noslip"
     else:
 
-        if (abs(fc.iloc[0]["Open"][futures_ticker] - fc.iloc[0]["Close"][futures_ticker]) / fc.iloc[0]["Open"][futures_ticker] < take_position_minimum ): #checks if futures has enough slip
+        if ( round((abs(fc.iloc[0]["Open"][futures_ticker] - fc.iloc[0]["Close"][futures_ticker]) / fc.iloc[0]["Open"][futures_ticker]), 2) > take_position_minimum ): #checks if futures has enough slip
             
             if tc.iloc[0]["Open"][ticker] < tc.iloc[0]["Close"][ticker]:
 
@@ -79,43 +79,44 @@ def ORB (tc, fc):
         else:
 
             return "f_noslip"
+        
 
-def LIMIT ( tc ):  #sets stop limits
+def LIMIT (tc ,fc):  #sets stop limits
 
-    if ORB ( tc ) == 0:
+    if ORB (tc, fc) == 0:
 
         return 0
     
-    if ORB ( tc ) == "long":
+    if ORB (tc, fc) == "long":
 
         return tc.iloc[0]["Low"][ticker]
     
-    if ORB ( tc ) == "short":
+    if ORB (tc, fc) == "short":
 
         return tc.iloc[0]["High"][ticker]
     
 
-def RISK ( tc ):   #calculates risk
+def RISK (tc, fc):   #calculates risk
 
-    if ORB ( tc ) == 0:
+    if ORB (tc, fc) == 0:
 
         return 0
     
     else :
 
-        return abs(tc.iloc[1]["Open"][ticker] - LIMIT( tc))
+        return abs(tc.iloc[1]["Open"][ticker] - LIMIT(tc, fc))
     
 
-def SIZE ( tc ):   #define size of trade
+def SIZE (tc, fc):   #define size of trade
 
-    if ORB ( tc ) == 0:
+    if ORB (tc, fc) == 0:
         
         return 0
     
     else :
-        if RISK(tc)==0:
+        if RISK(tc, fc)==0:
             return 1
-        return int(min( (balance*0.01/RISK(tc)), (max_leverage*balance/tc.iloc[0]["Open"][ticker]) ))
+        return int(min( (balance*0.01/RISK(tc, fc)), (max_leverage*balance/tc.iloc[0]["Open"][ticker]) ))
 
 
 
@@ -149,7 +150,7 @@ for day in trading_days:
 for day in f_trading_days:  
 
     next_day = day + timedelta(days=1)
-    f_candle = yf.download(futures_ticket, start=str(day), end=str(next_day), interval="5m", progress=False, auto_adjust=False)
+    f_candle = yf.download(futures_ticker, start=str(day), end=str(next_day), interval="5m", progress=False, auto_adjust=False)
  
  
  
