@@ -20,7 +20,8 @@ top_balance = balance
 fee_rate = 0.0002 #percentage
 max_leverage = 4
 take_position_minimum = 0.002 #minimum % slip in first candle to open the position
-ticker = "NVDA "  #title symbol
+ticker = "QQQ "  #title symbol
+futures_ticket = "NQ=F" 
 start_date = "2025-06-08"
 end_date = "2025-07-07"
 total_plays=0
