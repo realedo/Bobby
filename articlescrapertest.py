@@ -11,7 +11,7 @@ now = datetime.now(pytz.timezone("US/Eastern"))
 today = date.today()
 
 # Set up API access
-API_KEY = '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'
+API_KEY = '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'
 url = "https://openrouter.ai/api/v1/chat/completions"
 
 # Download QQQ data
@@ -71,7 +71,7 @@ headers = {
 }
 
 data = {
-    "model": "qwen/qwen3-14b:free",
+    "model": "qwen/qwen3-14b:free", #deepseek/deepseek-r1-0528:free
     "messages": [
         {
             "role": "user",
