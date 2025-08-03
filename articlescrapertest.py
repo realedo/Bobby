@@ -5,18 +5,38 @@ from datetime import datetime, date, timedelta
 import pandas_market_calendars as mcal
 import requests
 import json
+from dateutil import parser
+
+
 
 # Time and date setup
 now = datetime.now(pytz.timezone("US/Eastern"))
 today = date.today()
 
 # Set up API access
-API_KEY = ''
+API_KEY = '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'
+news_apikey = 'cf71e6ef428b4deba3b4e284eca4cac2'
 url = "https://openrouter.ai/api/v1/chat/completions"
+news_url = "https://newsapi.org/v2/everything"
+
+
+
+
+TARGET_DATE = now  # <-- date you're backtesting
+EST = pytz.timezone("US/Eastern")
+
+
+
+
+start_dt = EST.localize(datetime.combine(TARGET_DATE - timedelta(days=1), datetime.min.time()))
+end_dt = EST.localize(datetime.combine(TARGET_DATE, datetime.strptime("09:30", "%H:%M").time()))
+
+# === Format for NewsAPI ===
+start_str = start_dt.astimezone(pytz.utc).isoformat()
+end_str = end_dt.astimezone(pytz.utc).isoformat()
 
 # Download QQQ data
 qqq = yf.Ticker("QQQ")
-news = qqq.news
 
 # Get 5-min candles from yesterday only
 nyse = mcal.get_calendar("XNYS")
@@ -39,17 +59,45 @@ first5 = serialize_candles(qqq_data.head(5).to_dict(orient="records"))
 last5 = serialize_candles(qqq_data.tail(5).to_dict(orient="records"))
 qqq_data_json = first5 + last5
 
-# Clean news
+
+
+# === Query NewsAPI ===
+params = {
+    "q": "QQQ OR Nasdaq OR Invesco QQQ OR SPY OR S&P 500 OR technology stocks OR US economy",
+    "from": start_str,
+    "to": end_str,
+    "language": "en",
+    "sortBy": "publishedAt",
+    "apiKey": news_apikey,
+    "pageSize": 15,
+}
+
+news_response = requests.get(news_url, params=params)
+articles = news_response.json().get("articles", [])
+
+# === Clean into your format ===
 cleaned_news = []
-for item in news:
-    c = item.get("content", {})
+for article in articles:
+    published_dt = parser.parse(article["publishedAt"]).astimezone(EST)
     cleaned_news.append({
-        "title": c.get("title"),
-        "summary": c.get("summary"),
-        "url": c.get("clickThroughUrl", {}).get("url"),
-        "source": c.get("provider", {}).get("displayName"),
-        "published": c.get("pubDate")
+        "title": article.get("title"),
+        "summary": article.get("description"),
+        "url": article.get("url"),
+        "source": article.get("source", {}).get("name"),
+        "published": published_dt.isoformat()
     })
+
+# === Print result (for testing) ===
+print(f"Fetched {len(cleaned_news)} articles between {start_dt} and {end_dt}")
+for item in cleaned_news:
+    print(f"- {item['published']} | {item['title']}")
+
+
+
+
+
+
+
 
 # Prompt for model
 prompt = (
@@ -86,43 +134,44 @@ headers = {
     "X-Title": "Bobby"
 }
 
-#qwen
-data_q1 = {
-    "model": "qwen/qwen3-14b:free", 
-    "messages": [           
-        {
-            "role": "user",
-            "content": prompt
-        }
-    ]
-}
+
+def hi (hey):
+    #qwen
+    data_q1 = {
+        "model": "qwen/qwen3-14b:free", 
+        "messages": [           
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ]
+    }
 
 
-q1_response = requests.post(url, headers=headers, json=data_q1)
-q1_response_json = q1_response.json()
-q1_content = q1_response_json['choices'][0]['message']['content']
+    q1_response = requests.post(url, headers=headers, json=data_q1)
+    q1_response_json = q1_response.json()
+    q1_content = q1_response_json['choices'][0]['message']['content']
 
+    print("q1 result:\n")
+    print(q1_content+"\n")
 
-print("q1 result:\n")
-print(q1_content+"\n")
+    #quenq
+    data_q2 = {
+        "model": "qwen/qwq-32b:free", 
+        "messages": [           
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ]
+    }
 
-#quenq
-data_q2 = {
-    "model": "qwen/qwq-32b:free", 
-    "messages": [           
-        {
-            "role": "user",
-            "content": prompt
-        }
-    ]
-}
+    q2_response = requests.post(url, headers=headers, json=data_q2)
+    q2_response_json = q2_response.json()
+    q2_content = q2_response_json['choices'][0]['message']['content']
 
-q2_response = requests.post(url, headers=headers, json=data_q2)
-q2_response_json = q2_response.json()
-q2_content = q2_response_json['choices'][0]['message']['content']
-
-print("q2 result:\n")
-print(q2_content+"\n")
+    print("q2 result:\n")
+    print(q2_content+"\n")
 
 #deepseek
 data_d = {
@@ -163,3 +212,7 @@ print(z_content+"\n")
 
 
 
+
+
+
+#what i learned: both qwen take too long for the same result z and deepseek get, then they will get scraped from produciton
