@@ -52,7 +52,9 @@ f_trading_days = f_schedule.index.date
 def ORB (tc, fc):       
 
     if (round((abs(tc.iloc[0]["Open"][ticker] - tc.iloc[0]["Close"][ticker]) / tc.iloc[0]["Open"][ticker]),2) < take_position_minimum ): #checks if theres enough slip to make the strategy work
+        
         return "t-noslip"
+    
     else:
 
         if ( round((abs(fc.iloc[0]["Open"][futures_ticker] - fc.iloc[0]["Close"][futures_ticker]) / fc.iloc[0]["Open"][futures_ticker]), 2) > take_position_minimum ): #checks if futures has enough slip
