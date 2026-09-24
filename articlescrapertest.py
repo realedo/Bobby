@@ -14,8 +14,8 @@ now = datetime.now(pytz.timezone("US/Eastern"))
 today = date.today()
 
 # Set up API access
-API_KEY = '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'
-news_apikey = 'cf71e6ef428b4deba3b4e284eca4cac2'
+API_KEY = ''
+news_apikey = ''
 url = "https://openrouter.ai/api/v1/chat/completions"
 news_url = "https://newsapi.org/v2/everything"
 
